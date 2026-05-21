@@ -58,6 +58,9 @@ bash scripts/scan-repo.sh /path/to/your-project
 | `scripts/run-gitleaks.sh` | 钩子入口（读 `gitleaks.toml`） |
 | `scripts/activate-all.sh` | 本地 + 推送一键跑通 |
 | `scripts/scan-repo.sh` | 扫描任意目录 |
+| `secrets_demo.py` | 从 `.env` 安全读取密钥的示例 |
+| `.env.example` | 环境变量模板（可提交） |
+| `requirements.txt` | 示例依赖（`python-dotenv`） |
 
 ---
 
@@ -120,16 +123,14 @@ bash scripts/scan-repo.sh /path/to/your-project
 ### 4. 被 Gitleaks 拦截时怎么办
 
 1. **看终端输出**：会标明文件路径、行号与规则类型（如 `generic-api-key`）。
-2. **从代码中删除明文密钥**，改为从环境变量读取，例如：
+2. **从代码中删除明文密钥**，改为从环境变量读取。完整示例见 [secrets_demo.py](secrets_demo.py)：
 
-   ```python
-   import os
-   from dotenv import load_dotenv
-
-   load_dotenv()
-   api_token = os.getenv("API_TOKEN", "").strip()
-   if not api_token:
-       raise RuntimeError("API_TOKEN is missing — set it in .env")
+   ```bash
+   cd /Users/xiaoyang/gitleaks-tooling
+   cp .env.example .env
+   # 用编辑器打开 .env，填写 DATABASE_PASSWORD 和 API_TOKEN（下面三行不要带 # 一起复制）
+   python3 -m pip install -r requirements.txt
+   python3 secrets_demo.py
    ```
 
 3. **把真实值只写入业务项目的 `.env`**（该文件应在业务项目的 `.gitignore` 中，不会进仓库）：
@@ -152,15 +153,19 @@ bash scripts/scan-repo.sh /path/to/your-project
 
 6. **仅当**确认为测试假数据误报时，再在 [gitleaks.toml](gitleaks.toml) 的 `[allowlist]` 中按路径追加白名单，并经 Code Review；**禁止**把生产密钥加入白名单。
 
-### 5. 本地应忽略的文件
+### 5. 本地应忽略的文件（`.gitignore`）
 
-业务项目请在各自 `.gitignore` 中保留：
+本仓库 [.gitignore](.gitignore) 已包含：
 
-- `.env` — 本地真实密钥
-- `data/` — 本地数据库（若适用）
-- `.venv/` — 虚拟环境
+| 规则 | 说明 |
+|------|------|
+| `.env` | 本地真实密钥（**勿提交**） |
+| `.env.local`、`.env.*.local` | 本地覆盖配置 |
+| `!.env.example` | 模板可提交（仅占位符） |
+| `.venv/`、`__pycache__/` | Python 虚拟环境与缓存 |
+| `bin/gitleaks` | 本地下载的扫描二进制 |
 
-本工具仓库已忽略 `bin/gitleaks`（见 [.gitignore](.gitignore)）。
+业务项目请在各自仓库中同样忽略 `.env`，并提交 `.env.example`。
 
 ### 6. CI（GitHub Actions）
 

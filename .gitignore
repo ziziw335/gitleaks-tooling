@@ -1,4 +1,14 @@
+# ========== 密钥与本地环境（切勿提交）==========
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ========== Python ==========
+.venv/
+__pycache__/
+*.pyc
+
+# ========== 工具 ==========
 bin/gitleaks
 .DS_Store
-
-.git.broken/
