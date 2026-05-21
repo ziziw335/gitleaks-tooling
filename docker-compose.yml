@@ -1,0 +1,11 @@
+# 生产：在服务器项目目录执行 docker compose up -d --build
+services:
+  gitleaks-tooling:
+    build: .
+    container_name: gitleaks-tooling
+    env_file:
+      - .env
+    volumes:
+      - ./gitleaks.toml:/app/gitleaks.toml:ro
+      - ./scripts:/app/scripts:ro
+    restart: unless-stopped

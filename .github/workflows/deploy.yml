@@ -1,0 +1,94 @@
+# 生产部署：push 到 main/master → SSH 写入 .env → git pull → docker compose 重建
+#
+# GitHub → Settings → Secrets and variables → Actions：
+#   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY   （必填）
+#   SSH_PORT                              （可选，默认 22）
+#   DEPLOY_PATH                           （可选，默认 /opt/gitleaks-tooling）
+#   GIT_DEPLOY_TOKEN                      （可选，私有库 HTTPS pull）
+#   DATABASE_PASSWORD, API_TOKEN          （写入服务器 .env，按需配置）
+
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-gitleaks-tooling
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: SSH deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: 检查必填 Secrets
+        run: |
+          set -e
+          check() {
+            if [ -z "$1" ]; then
+              echo "::error title=缺少 Secret::$2 未配置，请到 Settings → Secrets → Actions 添加"
+              exit 1
+            fi
+          }
+          check "${{ secrets.SSH_HOST }}" "SSH_HOST"
+          check "${{ secrets.SSH_USER }}" "SSH_USER"
+          check "${{ secrets.SSH_PRIVATE_KEY }}" "SSH_PRIVATE_KEY"
+          echo "必填 SSH Secrets 已配置"
+
+      - name: SSH 连通测试
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT != '' && secrets.SSH_PORT || '22' }}
+          script: |
+            echo "SSH OK from GitHub Actions"
+            uname -a
+            command -v docker >/dev/null && docker --version || echo "WARN: docker not installed"
+            command -v git >/dev/null && git --version || echo "WARN: git not installed"
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GIT_DEPLOY_TOKEN: ${{ secrets.GIT_DEPLOY_TOKEN }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT != '' && secrets.SSH_PORT || '22' }}
+          command_timeout: 15m
+          envs: DEPLOY_PATH,GIT_DEPLOY_TOKEN,DATABASE_PASSWORD,API_TOKEN
+          script: |
+            set -euxo pipefail
+            export DEPLOY_PATH="${DEPLOY_PATH:-/opt/gitleaks-tooling}"
+            REPO="https://github.com/ziziw335/gitleaks-tooling.git"
+
+            mkdir -p "${DEPLOY_PATH}"
+            if [ ! -d "${DEPLOY_PATH}/.git" ]; then
+              if [ -n "$(ls -A "${DEPLOY_PATH}" 2>/dev/null || true)" ]; then
+                echo ">>> ${DEPLOY_PATH} 已有文件，转为 git 仓库"
+                cd "${DEPLOY_PATH}"
+                git init -b main
+                git remote add origin "${REPO}" 2>/dev/null || git remote set-url origin "${REPO}"
+                git fetch origin main
+                git checkout -f -B main origin/main
+              else
+                git clone "${REPO}" "${DEPLOY_PATH}"
+              fi
+            fi
+
+            cd "${DEPLOY_PATH}"
+            git fetch origin
+            git reset --hard origin/main
+
+            bash scripts/ci-deploy.sh

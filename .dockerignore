@@ -1,0 +1,10 @@
+.git
+.git.broken
+.venv
+__pycache__
+*.pyc
+.env
+.env.local
+bin/gitleaks
+.DS_Store
+.idea

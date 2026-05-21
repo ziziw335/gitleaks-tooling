@@ -173,6 +173,20 @@ bash scripts/scan-repo.sh /path/to/your-project
 
 查看运行结果：https://github.com/ziziw335/gitleaks-tooling/actions
 
+---
+
+## 生产自动部署（GitHub Actions）
+
+推送至 `main` / `master` 时，[.github/workflows/deploy.yml](.github/workflows/deploy.yml) 会：
+
+1. 通过 **appleboy/ssh-action** 连接 Linux 服务器  
+2. 将 Secrets 中的 `DATABASE_PASSWORD`、`API_TOKEN` 等写入服务器 `.env`（[scripts/ci-write-env.sh](scripts/ci-write-env.sh)）  
+3. `git pull` 后执行 `docker compose up -d --build`（[scripts/ci-deploy.sh](scripts/ci-deploy.sh)）
+
+Secrets 清单见 [docs/github-deploy-secrets.md](docs/github-deploy-secrets.md)。
+
+服务器默认目录：`/opt/gitleaks-tooling`（可用 Secret `DEPLOY_PATH` 覆盖）。
+
 ### 7. 联系人
 
 对误报、白名单或扫描规则有疑问，请与仓库维护者沟通后再改 `gitleaks.toml`，避免为图省事关闭扫描。
