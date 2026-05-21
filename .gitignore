@@ -1,0 +1,4 @@
+bin/gitleaks
+.DS_Store
+
+.git.broken/

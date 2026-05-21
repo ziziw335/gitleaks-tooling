@@ -1,0 +1,12 @@
+# 使用本地 bin/gitleaks，避免 pre-commit 从 GitHub 下载 golang 环境（macOS 易出现 SSL 证书错误）
+default_install_hook_types: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: Gitleaks secret scan
+        entry: scripts/run-gitleaks.sh
+        language: script
+        pass_filenames: false
+        stages: [pre-commit]

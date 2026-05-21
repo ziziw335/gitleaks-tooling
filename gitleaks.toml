@@ -1,0 +1,32 @@
+# Gitleaks 配置：继承官方默认规则，并放宽测试/示例路径
+# 文档: https://github.com/gitleaks/gitleaks#configuration
+
+title = "gitleaks-tooling"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "测试目录、测试文件命名、示例配置与本地环境（降低误报）"
+paths = [
+    '''(?:^|/)tests?(?:/|$)''',
+    '''(?:^|/)__tests__(?:/|$)''',
+    '''(?:^|/)testing(?:/|$)''',
+    '''(?:^|/)fixtures?(?:/|$)''',
+    '''(?:^|/)testdata(?:/|$)''',
+    '''(?:^|/)mock(?:s)?(?:/|$)''',
+    '''(?:^|/)e2e(?:/|$)''',
+    '''(?:^|/)spec(?:/|$)''',
+    '''(?i)(?:^|/).*_test\.(?:py|go|js|ts|tsx|java|rb)$''',
+    '''(?i)(?:^|/)test_[^/]+\.(?:py|go|js|ts|tsx|java|rb)$''',
+    '''(?i)(?:^|/)[^/]*\.test\.(?:py|go|js|ts|tsx)$''',
+    '''(?i)(?:^|/)[^/]*\.spec\.(?:py|go|js|ts|tsx)$''',
+    '''(?:^|/)conftest\.py$''',
+    '''(?:^|/)\.env$''',
+    '''(?:^|/)\.env\.example$''',
+    '''(?:^|/)\.env\.sample$''',
+    '''(?:^|/)\.env\.template$''',
+    '''(?i)(?:^|/)(?:\.?venv|virtualenv)(?:/|$)''',
+    '''(?:^|/)data(?:/|$)''',
+    '''(?:^|/)\.idea(?:/|$)''',
+]
